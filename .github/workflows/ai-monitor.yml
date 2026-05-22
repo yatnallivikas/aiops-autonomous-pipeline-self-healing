@@ -16,26 +16,21 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: Verify Python
+        run: python --version
 
       - name: Install Python Packages
-        run: |
-          pip install requests python-dotenv ollama
+        run: pip install requests python-dotenv ollama
 
       - name: Fetch GitHub Logs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ github.event.workflow_run.id }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: |
-          python src/agents/github_log_fetcher.py
+        run: python src/agents/github_log_fetcher.py
 
       - name: Run AI Analysis
-        run: |
-          python src/agents/log_analyzer.py
+        run: python src/agents/log_analyzer.py
 
       - name: Upload AI Report
         uses: actions/upload-artifact@v4
