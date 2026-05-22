@@ -1,122 +1,56 @@
-from strands import Agent
-from strands.models.ollama import OllamaModel
-
+import os
+import ollama
 from datetime import datetime
 
-import os
+LOGS_DIR = "src/logs"
+REPORTS_DIR = "src/reports"
 
+os.makedirs(REPORTS_DIR, exist_ok=True)
 
-# =========================
-# OLLAMA MODEL
-# =========================
+all_logs = ""
 
-model = OllamaModel(
-    host="http://localhost:11434",
-    model_id="qwen2.5:7b"
-)
+for root, dirs, files in os.walk(LOGS_DIR):
+    for file in files:
+        if file.endswith(".txt"):
 
+            filepath = os.path.join(root, file)
 
-# =========================
-# SYSTEM PROMPT
-# =========================
-
-system_prompt = """
-You are an expert DevOps troubleshooting assistant.
-
-Your job:
-- Analyze CI/CD workflow failures
-- Identify root cause
-- Suggest remediation
-- Summarize issues clearly
-
-Rules:
-- Keep responses concise
-- Focus only on important failures
-- Ignore unnecessary warnings
-"""
-
-
-# =========================
-# CREATE AGENT
-# =========================
-
-agent = Agent(
-    model=model,
-    system_prompt=system_prompt
-)
-
-
-# =========================
-# READ LOG FILE
-# =========================
-
-log_file = "src/logs/github_failure.log"
-
-
-with open(log_file, "r", encoding="utf-8") as file:
-
-    logs = file.read()
-
-
-# =========================
-# LIMIT HUGE LOGS
-# =========================
-
-logs = logs[:12000]
-
-
-# =========================
-# CREATE PROMPT
-# =========================
+            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                all_logs += f.read()
+                all_logs += "\n\n"
 
 prompt = f"""
-Analyze the following GitHub Actions CI/CD logs.
+Analyze the following GitHub Actions workflow failure logs.
 
-Logs:
-{logs}
-
-Provide response in this format:
-
+Provide:
 1. Root Cause
 2. Suggested Fix
 3. Summary
+
+Logs:
+{all_logs}
 """
 
+response = ollama.chat(
+    model="qwen2.5:7b",
+    messages=[
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
+)
 
-# =========================
-# RUN ANALYSIS
-# =========================
-
-print("\n========== ANALYZING LOGS ==========\n")
-
-response = agent(prompt)
-
-
-# =========================
-# PRINT OUTPUT
-# =========================
-
-print("\n========== AI ANALYSIS ==========\n")
-
-print(response)
-
-
-# =========================
-# SAVE REPORT
-# =========================
-
-os.makedirs("src/reports", exist_ok=True)
+analysis = response["message"]["content"]
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-report_file = f"src/reports/report_{timestamp}.txt"
+report_file = f"{REPORTS_DIR}/report_{timestamp}.txt"
 
+with open(report_file, "w", encoding="utf-8") as f:
+    f.write(analysis)
 
-with open(report_file, "w", encoding="utf-8") as file:
+print("\nAI ANALYSIS REPORT\n")
+print(analysis)
 
-    file.write(str(response))
-
-
-print("\n========== REPORT SAVED ==========\n")
-
-print(report_file)
+print(f"\nReport saved to: {report_file}")
