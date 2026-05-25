@@ -14,7 +14,7 @@ This project continuously monitors GitHub Actions workflow failures, automatical
 
 ---
 
-# What This Project Does
+# What This Project Does exactly
 
 This system creates a fully autonomous AI debugging pipeline for CI/CD workflows.
 
